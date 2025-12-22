@@ -40,6 +40,7 @@ io.on("connection", (socket) => {
     for (const [email, socketId] of emailToSocketMapping.entries()) {
       if (socketId === socket.id) {
         emailToSocketMapping.delete(email);
+        socketToEmailMapping.delete(socket.id);
         break;
       }
     }
@@ -52,8 +53,21 @@ io.on("connection", (socket) => {
     const fromEmail = socketToEmailMapping.get(socket.id);
     const socketId = emailToSocketMapping.get(email);
 
-    socket.to(socketId).emit("incoming-call", { from: fromEmail, offer });
+    if (fromEmail) {
+
+      socket.to(socketId).emit("incoming-call", { from: fromEmail, offer });
+    }
   });
+
+  socket.on("answer-call", (answer) => {
+    const fromEmail = socketToEmailMapping.get(socket.id);
+
+    for (const [email, socketId] of emailToSocketMapping.entries()) {
+      if (email !== fromEmail) {
+        socket.to(socketId).emit("call-accepted", { answer });
+      }
+    }
+  })
 });
 
 server.listen(8000, () => {

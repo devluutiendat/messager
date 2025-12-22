@@ -3,8 +3,10 @@
 import { createContext, useContext, useRef } from "react";
 
 type PeerContextType = {
-  peer: RTCPeerConnection;
+  peer: RTCPeerConnection | null;
   createOffer: () => Promise<RTCSessionDescriptionInit>;
+  createAnswer: () => Promise<RTCSessionDescriptionInit>;
+  setRemoteDescription: (desc: RTCSessionDescriptionInit) => Promise<void>;
 };
 
 const PeerContext = createContext<PeerContextType | null>(null);
@@ -20,7 +22,7 @@ export const usePeer = () => {
 export const PeerProvider = ({ children }: { children: React.ReactNode }) => {
   const peerRef = useRef<RTCPeerConnection | null>(null);
 
-  if (!peerRef.current) {
+  if (typeof window !== "undefined" && !peerRef.current) {
     peerRef.current = new RTCPeerConnection({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     });
@@ -32,11 +34,23 @@ export const PeerProvider = ({ children }: { children: React.ReactNode }) => {
     return offer;
   };
 
+  const createAnswer = async () => {
+    const answer = await peerRef.current!.createAnswer();
+    await peerRef.current!.setLocalDescription(answer);
+    return answer;
+  };
+
+  const setRemoteDescription = async (desc: RTCSessionDescriptionInit) => {
+    await peerRef.current!.setRemoteDescription(desc);
+  };
+
   return (
     <PeerContext.Provider
       value={{
         peer: peerRef.current,
         createOffer,
+        createAnswer,
+        setRemoteDescription,
       }}
     >
       {children}
