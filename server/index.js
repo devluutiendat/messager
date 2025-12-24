@@ -3,13 +3,14 @@ const bodyParser = require("body-parser");
 const http = require("http");
 const { Server } = require("socket.io");
 var cors = require("cors");
+const { log } = require("console");
 
 const app = express();
 
 const server = http.createServer(app);
 
 app.use(bodyParser.json());
-app.use(cors);
+app.use(cors());
 
 const io = new Server(server, {
   cors: {
@@ -54,20 +55,25 @@ io.on("connection", (socket) => {
     const socketId = emailToSocketMapping.get(email);
 
     if (fromEmail) {
-
       socket.to(socketId).emit("incoming-call", { from: fromEmail, offer });
+      console.log("call outgoing call from", fromEmail, "to", email);
     }
   });
 
-  socket.on("answer-call", (answer) => {
-    const fromEmail = socketToEmailMapping.get(socket.id);
+  socket.on("answer-call", ({ to, answer }) => {
+    const socketId = emailToSocketMapping.get(to);
+    if (!socketId) return;
 
-    for (const [email, socketId] of emailToSocketMapping.entries()) {
-      if (email !== fromEmail) {
-        socket.to(socketId).emit("call-accepted", { answer });
-      }
-    }
-  })
+    socket.to(socketId).emit("call-accepted", { answer });
+  });
+
+
+  socket.on("ice-candidate", ({ candidate }) => {
+    const fromEmail = socketToEmailMapping.get(socket.id);
+    log("ICE candidate from:", fromEmail);
+
+    socket.broadcast.emit("ice-candidate", { candidate });
+  });
 });
 
 server.listen(8000, () => {

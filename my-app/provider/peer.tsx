@@ -1,12 +1,13 @@
 "use client";
 
-import { createContext, useContext, useRef } from "react";
+import { createContext, useContext, useRef, useCallback, useMemo } from "react";
 
 type PeerContextType = {
   peer: RTCPeerConnection | null;
   createOffer: () => Promise<RTCSessionDescriptionInit>;
   createAnswer: () => Promise<RTCSessionDescriptionInit>;
   setRemoteDescription: (desc: RTCSessionDescriptionInit) => Promise<void>;
+  addIceCandidate: (candidate: RTCIceCandidateInit) => Promise<void>;
 };
 
 const PeerContext = createContext<PeerContextType | null>(null);
@@ -28,32 +29,45 @@ export const PeerProvider = ({ children }: { children: React.ReactNode }) => {
     });
   }
 
-  const createOffer = async (): Promise<RTCSessionDescriptionInit> => {
-    const offer = await peerRef.current!.createOffer();
-    await peerRef.current!.setLocalDescription(offer);
-    return offer;
-  };
+  const createOffer =
+    useCallback(async (): Promise<RTCSessionDescriptionInit> => {
+      const offer = await peerRef.current!.createOffer();
+      await peerRef.current!.setLocalDescription(offer);
+      return offer;
+    }, []);
 
-  const createAnswer = async () => {
+  const createAnswer = useCallback(async () => {
     const answer = await peerRef.current!.createAnswer();
     await peerRef.current!.setLocalDescription(answer);
     return answer;
-  };
+  }, []);
 
-  const setRemoteDescription = async (desc: RTCSessionDescriptionInit) => {
-    await peerRef.current!.setRemoteDescription(desc);
-  };
+  const setRemoteDescription = useCallback(
+    async (desc: RTCSessionDescriptionInit) => {
+      await peerRef.current!.setRemoteDescription(desc);
+    },
+    []
+  );
+
+  const addIceCandidate = useCallback(
+    async (candidate: RTCIceCandidateInit) => {
+      await peerRef.current!.addIceCandidate(candidate);
+    },
+    []
+  );
+
+  const contextValue = useMemo(
+    () => ({
+      peer: peerRef.current,
+      createOffer,
+      createAnswer,
+      setRemoteDescription,
+      addIceCandidate,
+    }),
+    [createOffer, createAnswer, setRemoteDescription, addIceCandidate]
+  );
 
   return (
-    <PeerContext.Provider
-      value={{
-        peer: peerRef.current,
-        createOffer,
-        createAnswer,
-        setRemoteDescription,
-      }}
-    >
-      {children}
-    </PeerContext.Provider>
+    <PeerContext.Provider value={contextValue}>{children}</PeerContext.Provider>
   );
 };

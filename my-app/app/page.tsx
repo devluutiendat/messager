@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSocket } from "@/provider/socket";
 
 export default function LoginForm() {
-  const { socket, connect } = useSocket();
+  const { connect } = useSocket();
 
   const [email, setEmail] = useState("");
   const [roomId, setRoomId] = useState("");
@@ -16,12 +16,7 @@ export default function LoginForm() {
 
     connect();
 
-    socket?.emit("join-room", {
-      email,
-      roomId,
-    });
-
-    router.push(`/room/${roomId}`);
+    router.push(`/room/${roomId}?email=${email}`);
   };
 
   return (
