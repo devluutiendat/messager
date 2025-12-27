@@ -21,6 +21,7 @@ const io = new Server(server, {
 });
 
 const emailToSocketMapping = new Map();
+
 const socketToEmailMapping = new Map();
 
 io.on("connection", (socket) => {
@@ -68,12 +69,19 @@ io.on("connection", (socket) => {
   });
 
 
-  socket.on("ice-candidate", ({ candidate }) => {
-    const fromEmail = socketToEmailMapping.get(socket.id);
-    log("ICE candidate from:", fromEmail);
+socket.on("ice-candidate", ({ candidate }) => {
+  const rooms = Array.from(socket.rooms);
+  const roomId = rooms.find(r => r !== socket.id);
 
-    socket.broadcast.emit("ice-candidate", { candidate });
-  });
+  if (roomId) {
+    socket.to(roomId).emit("ice-candidate", { candidate });
+  }
+});
+  socket.on("send-message", ({roomId, mesaage, sender}) =>{
+    io.to(roomId).emit(("receive-message", () => {
+      mesaage, sender
+    }))
+  })
 });
 
 server.listen(8000, () => {
