@@ -4,6 +4,7 @@ import { useEffect, useRef, use, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSocket } from "@/provider/socket";
 import { useWebRTC } from "@/hooks/useWebRTC";
+import Chat from "@/components/chat";
 
 export default function RoomPage({
   params,
@@ -77,25 +78,29 @@ export default function RoomPage({
   }, [remoteStream]);
 
   return (
-    <div className="flex gap-4 p-4">
-      <div>
-        <h3>Local: {email}</h3>
-        <video
-          ref={localVideoRef}
-          autoPlay
-          muted
-          playsInline
-          className="w-72 bg-black border"
-        />
-      </div>
-      <div>
-        <h3>Remote</h3>
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          playsInline
-          className="w-72 bg-black border"
-        />
+    <div>
+      <Chat roomId={roomId} sender={email} />
+
+      <div className="flex gap-4 p-4">
+        <div>
+          <h3>Local: {email}</h3>
+          <video
+            ref={localVideoRef}
+            autoPlay
+            muted
+            playsInline
+            className="w-72 bg-black border"
+          />
+        </div>
+        <div>
+          <h3>Remote</h3>
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            className="w-72 bg-black border"
+          />
+        </div>
       </div>
     </div>
   );
